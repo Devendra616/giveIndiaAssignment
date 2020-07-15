@@ -3,22 +3,30 @@ require('dotenv').config();
 const express = require('express');
 const logger = require('morgan');
 const createError = require('http-errors');
-//const User = require('./models/user');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const moment = require('moment');
+const methodOverride = require('method-override');
 const session = require("express-session");
 const app= express();
 
-//* Connect to the database
+const seedDb = require('./seed');
+const seedDB = require('./seed');
 
-const dbURL = `mongodb://${process.env.DBUSER}:${process.env.DBPASSWORD}@ds241308.mlab.com:41308/give-india`||"mongodb://localhost/give-india";
-mongoose.connect(dbURL,{useNewUrlParser: true, useCreateIndex:true});
+//* Connect to the database 
+const dbURI = `mongodb://${process.env.DBUSER}:${process.env.DBPASSWORD}@${process.env.DATABASEURL}`||"mongodb://localhost/give-india";
+mongoose.connect(dbURI,{useNewUrlParser: true, useCreateIndex:true, useUnifiedTopology:true});
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open',() =>{
-  console.log("we're connected!");
+  console.log("We're connected to the database!");
 });
+
+app.use(methodOverride("_method"));
+
+// seed the database
+seedDB();
+
 
 // * Logger
 logger.token('host', function(req, res) {
