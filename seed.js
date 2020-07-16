@@ -32,7 +32,7 @@ const data = [
 function seedDB() {
 
     // Remove all AccountTypes and add
-    Type.remove({}, function(err) {
+    Type.deleteMany({}, function(err) {
         if(err) {
             console.log(err);
         }
@@ -50,7 +50,7 @@ function seedDB() {
     });
 
     // Remove all Accounts
-    Account.remove({}, function(err){
+    Account.deleteMany({}, function(err){
         
         if(err) {
             console.log(err);
@@ -60,7 +60,7 @@ function seedDB() {
     })
 
     //remove all users
-    User.remove({}, function(err) {
+    User.deleteMany({}, function(err) {
         
         if(err) {
             console.log(err);
