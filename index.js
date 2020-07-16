@@ -43,7 +43,7 @@ app.use(session({
 app.use(bodyParser.urlencoded({extended:true}));
 
 // seed the database, uncomment to provide initial data
-seedDb();
+//seedDb();
 
 
 // * Logger
@@ -59,30 +59,58 @@ app.use(logger(':method :host :url :status at :time'));
 async function transfer(fromAccountId, toAccountId, amount) {
     const session = await mongoose.startSession();
     const options= {session, new:true}
-    console.log('in transfer');
-    console.log(fromAccountId);
-    console.log(toAccountId);
-    console.log(amount)
+    let sourceAccount, destinationAccount;
+    const BASICSAVNGS_MAX_BALANCE = 1500;
+
+    if(fromAccountId === toAccountId) {
+        console.log('Can not send to same account');
+        return;
+    }
+
+    // Check if the account belongs to same user
+    try{
+         sourceAccount = await Account.findOne({accountNo:fromAccountId});
+         destinationAccount =await Account.findOne({accountNo:toAccountId});
+        
+        if(sourceAccount.user.id.equals(destinationAccount.user.id)) {
+            console.log('Can not transfer between accounts belonging to same user');
+            return;
+        }
+    }catch(err) {
+        console.log('Some error occured!');
+        throw err;
+    }
+
+    // If users are different try transfer 
     session.startTransaction();
     try {
-        const source= await Account.findOneAndUpdate(
-            {accountNo:fromAccountId},
+        const source= await Account.findByIdAndUpdate(
+            {_id:sourceAccount._id},
             {$inc:{balance:-amount}},
             options
         );
-        console.log('after sending source',source);
+    
         if(source.balance <0) {
-            // If negative balance remains of sender, abort transaction
-            throw new Error('Insufficient Balance:');
+            // Source account should have the required amount for the transaction to succeed
+            throw new Error('Insufficient Balance with Sender:');
         }
         
-        const destination = await Account.findOneAndUpdate(
-            {accountNo:toAccountId},
+        const destination = await Account.findByIdAndUpdate(
+            {_id:destinationAccount._id},
             {$inc:{balance:amount}},
             options
-        );
-        console.log('after sending source',destination);
+        ); 
+
+        // The balance in ‘BasicSavings’ account type should never exceed Rs. 50,000
+        if((destination.accountType.name === 'BasicSavings') && (destination.balance > BASICSAVNGS_MAX_BALANCE)) {
+            throw new Error(`Recepient's maximum account limit reached`);
+        }
         await session.commitTransaction();
+        const result = {
+            newSrcBalance: source.balance,
+            totalDestBalance:0,
+            transferedAt:moment.now()
+        }
         session.endSession();
     }
      catch (error) {
@@ -90,7 +118,7 @@ async function transfer(fromAccountId, toAccountId, amount) {
         await session.abortTransaction();
         session.endSession();
         throw error;
-    }
+    } 
 }
 
 

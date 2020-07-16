@@ -26,6 +26,10 @@ const data = [
     {
         name:'Vishal',
         pan:'XABSG0774B'
+    },
+    {
+        name:'Robert',
+        pan:'TESTS123Z'
     }
 ];
 
