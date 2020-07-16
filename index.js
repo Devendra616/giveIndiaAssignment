@@ -43,7 +43,7 @@ app.use(session({
 app.use(bodyParser.urlencoded({extended:true}));
 
 // seed the database, uncomment to provide initial data
-//seedDb();
+seedDb();
 
 
 // * Logger
@@ -55,7 +55,6 @@ logger.token('time', function(req, res) {
     return currentTimeStamp;
 });
 app.use(logger(':method :host :url :status at :time'));
-
 
 async function transfer(fromAccountId, toAccountId, amount) {
     const session = await mongoose.startSession();

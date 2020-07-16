@@ -73,7 +73,7 @@ function seedDB() {
                 if(err) {
                     console.log(err);
                 } else {
-                    console.log("added user");
+                    console.log("added user", user);
                     const randomAcNo = Math.floor(Math.random()*10000*Math.random()*2000+1000);
                     const randomType = Math.floor(Math.random()*3);
                     /* 
@@ -84,11 +84,17 @@ function seedDB() {
                     const randomAccName = accountTypeData[randomType].name;
                     
                     const randomAccType= await Type.find({name:randomAccName});
-                    console.log("random type",randomAccType);
+                    
                     Account.create({
                         accountNo:randomAcNo, 
-                        user:user,
-                        accountType:randomAccType._id,
+                        user:{
+                            id:user._id,
+                            name:user.name
+                        },
+                        accountType:{
+                            id:randomAccType[0]._id,
+                            name:randomAccType[0].name
+                        },
                         balance:1000
                     }, function(err,account) {
                         if(err) {
