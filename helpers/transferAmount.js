@@ -9,7 +9,12 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
     const options= {session, new:true}
     let sourceAccount, destinationAccount;
     const BASICSAVNGS_MAX_BALANCE = 1500;
-    let totalDestBalance=0;
+    
+    let result = {
+        newSrcBalance: 0,
+        totalDestBalance:0,
+        transferedAt:moment.now()
+    }
     
     if(fromAccountId === toAccountId) {
         const errorMessage='Can not send to same account';        
@@ -33,7 +38,7 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
     }catch(err) {
         const errorMessage='Some error occured in fetching account details!';
         console.log(err);
-        throw new ErrorHandler(404,errorMessage);
+        throw new ErrorHandler(err.errorCode,err.errorMessage);
     }
 
     // If users are different try transfer 
@@ -63,34 +68,18 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
             const errorMessage=`Recepient's maximum account limit reached`;
             throw new ErrorHandler(404,errorMessage); 
         }
-        await session.commitTransaction();
+        await session.commitTransaction();        
         session.endSession();
-
-        // finding total balance in destination account
-        await User.findById(destination.user.id, async function(err,user){
-            if(err) {
-                const errorMessage=`Recepient not found!`;
-                console.log(err);
-                throw new ErrorHandler(404,errorMessage);  
-            } else {                
-                if(user.accounts) {
-                    await Account.find({
-                        '_id' :{$in:user.accounts}
-                    }, function(err,userAccounts) {                       
-                        totalDestBalance = userAccounts.reduce( (accumulator,obj) => accumulator+obj.balance,0);  
-                                                      
-                    });                    
-                }                
-            }
-        });
-        const result = {
+        totalDestBalance = await updateTotalDestinationBalance(destination.user.id);
+        
+        result = {
+            transferedAt : moment.now(),
             newSrcBalance: source.balance,
-            totalDestBalance,
-            transferedAt:moment.now()
-        }  
-        console.log(result)      
+            totalDestBalance
+        }                
+                
     }
-     catch (error) {
+     catch (error) {console.log(error)
         // Abort transaction and undo any changes
         await session.abortTransaction();
         session.endSession();
@@ -99,7 +88,25 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
         if(session) {
             session.endSession();
         }
-    } 
+    }
+    return result;
+}
+
+updateTotalDestinationBalance = async (userId) => {
+    // finding total balance in destination account
+    let balance =0;
+    try{
+        const user = await User.findById(userId);
+        if (user.accounts) {
+            const userAccounts = await Account.find({ _id: { $in: user.accounts } });
+            balance = userAccounts.reduce((accumulator, obj) => accumulator + obj.balance, 0);        
+            return balance;
+        }
+    } catch(err) {
+        const errorMessage=`Recepient not found!`;
+        console.log(err);
+        throw new ErrorHandler(404,errorMessage);  
+    }
 }
 
 module.exports = transferAmount;
