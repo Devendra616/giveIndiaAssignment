@@ -4,11 +4,12 @@ const Account = require('../models/account');
 const User = require('../models/user');
 const { ErrorHandler, handleError} = require('../helpers/error');
 
+// provide amount in paise
 async function transferAmount(fromAccountId, toAccountId, amount) {
     const session = await mongoose.startSession();
     const options= {session, new:true}
     let sourceAccount, destinationAccount;
-    const BASICSAVNGS_MAX_BALANCE = 1500;
+    const BASICSAVNGS_MAX_BALANCE = 5000000; //Rs 50,000
     
     let result = {
         newSrcBalance: 0,
@@ -35,8 +36,7 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
             const errorMessage='Can not transfer between accounts belonging to same user'          
             throw new ErrorHandler(404,errorMessage);
         }
-    }catch(err) {
-        const errorMessage='Some error occured in fetching account details!';
+    }catch(err) {        
         console.log(err);
         throw new ErrorHandler(err.errorCode,err.errorMessage);
     }
@@ -72,18 +72,19 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
         session.endSession();
         totalDestBalance = await updateTotalDestinationBalance(destination.user.id);
         
-        result = {
-            transferedAt : moment.now(),
+
+        result = {            
             newSrcBalance: source.balance,
-            totalDestBalance
+            totalDestBalance,
+            transferedAt : moment.now(),
         }                
                 
     }
-     catch (error) {console.log(error)
+     catch (error) {
         // Abort transaction and undo any changes
         await session.abortTransaction();
-        session.endSession();
-        throw new ErrorHandler(404,error);
+        session.endSession();     
+        throw new ErrorHandler(error.errorCode,error.errorMessage);
     } finally {
         if(session) {
             session.endSession();

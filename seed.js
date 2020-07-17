@@ -127,7 +127,7 @@ function seedDB() {
                             id:randomAccType[0]._id,
                             name:randomAccType[0].name
                         },
-                        balance:1000
+                        balance:100000
                     }, function(err,account) {
                         if(err) {
                             console.log(err);

@@ -72,25 +72,27 @@ app.post("/transferAmount", async (req,res,next) => {
     
     try {        
             if(!fromAccountId) {
-                errMsg += "Source Account missing. ";
-                console.log(`Error!, ${errMsg}`);
+                errMsg += "Source Account missing. ";                
             }
             if(!toAccountId) {
-                errMsg += "Destination Account missing. ";
-                console.log(`Error!, ${errMsg}`);
+                errMsg += "Destination Account missing. ";                
             }
             if(!amount) {
                 errMsg += "Amount missing. ";
-                console.log(`Error!, ${errMsg}`);
+               
+            }
+            if(amount %1 !== 0) {
+                // Check for decimal input
+                errMsg += "Amount should be in paise whole."
             }
             if(errMsg.length>0) {
+                console.log(`Error!, ${errMsg}`);
                 throw new ErrorHandler(404,errMsg);
             } else {
-                const result = await transferAmount(fromAccountId, toAccountId, amount);
-                console.log(result)
+                const result = await transferAmount(fromAccountId, toAccountId, amount);                
                 res.json(result);        
             }
-        } catch(err){
+        } catch(err){            
             next(err)            
         }   
 });
