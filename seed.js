@@ -30,7 +30,35 @@ const data = [
     {
         name:'Robert',
         pan:'TESTS123Z'
-    }
+    },
+    {
+       name:'Rakesh' ,
+       pan:'TESTA123B'
+    },
+    {
+       name:'Ethan' ,
+       pan:'TESTB123C'
+    },
+    {
+       name:'Merry' ,
+       pan:'TESTC123D'
+    },
+    {
+       name:'Norman' ,
+       pan:'TESTD123E'
+    },
+    {
+       name:'Ciara' ,
+       pan:'TESTE123F'
+    },
+    {
+       name:'Shawn' ,
+       pan:'TESTF123G'
+    },
+    {
+       name:'Samuel' ,
+       pan:'TESTG123H'
+    },
 ];
 
 function seedDB() {
@@ -63,7 +91,7 @@ function seedDB() {
         }
     })
 
-    //remove all users
+    //remove all users and add new
     User.deleteMany({}, function(err) {
         
         if(err) {

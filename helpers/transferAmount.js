@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 const Account = require('../models/account');
 const User = require('../models/user');
-
+const { ErrorHandler, handleError} = require('../helpers/error');
 
 async function transferAmount(fromAccountId, toAccountId, amount) {
     const session = await mongoose.startSession();
@@ -20,7 +20,12 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
     try{
          sourceAccount = await Account.findOne({accountNo:fromAccountId});
          destinationAccount =await Account.findOne({accountNo:toAccountId});
-        
+         
+         if(!sourceAccount || !destinationAccount) {
+             const errorMessage = 'Sender/Destination account number not found';
+             throw new ErrorHandler(404,errorMessage);
+         }
+
         if(sourceAccount.user.id.equals(destinationAccount.user.id)) {
             const errorMessage='Can not transfer between accounts belonging to same user'          
             throw new ErrorHandler(404,errorMessage);
@@ -32,8 +37,9 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
     }
 
     // If users are different try transfer 
-    session.startTransaction();
+    
     try {
+        session.startTransaction();
         const source= await Account.findByIdAndUpdate(
             {_id:sourceAccount._id},
             {$inc:{balance:-amount}},
@@ -59,7 +65,8 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
         }
         await session.commitTransaction();
         session.endSession();
-        
+
+        // finding total balance in destination account
         await User.findById(destination.user.id, async function(err,user){
             if(err) {
                 const errorMessage=`Recepient not found!`;
@@ -71,23 +78,27 @@ async function transferAmount(fromAccountId, toAccountId, amount) {
                         '_id' :{$in:user.accounts}
                     }, function(err,userAccounts) {                       
                         totalDestBalance = userAccounts.reduce( (accumulator,obj) => accumulator+obj.balance,0);  
-                        const result = {
-                            newSrcBalance: source.balance,
-                            totalDestBalance,
-                            transferedAt:moment.now()
-                        }    
-                        console.log('submitting', result)                
-                        return result;                                
+                                                      
                     });                    
                 }                
             }
-        });      
+        });
+        const result = {
+            newSrcBalance: source.balance,
+            totalDestBalance,
+            transferedAt:moment.now()
+        }  
+        console.log(result)      
     }
      catch (error) {
         // Abort transaction and undo any changes
         await session.abortTransaction();
         session.endSession();
         throw new ErrorHandler(404,error);
+    } finally {
+        if(session) {
+            session.endSession();
+        }
     } 
 }
 

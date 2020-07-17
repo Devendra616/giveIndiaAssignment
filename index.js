@@ -66,33 +66,33 @@ app.get('/',(req,res) => {
     res.send('root');
 });
 
-app.post("/transferAmount", async (req,res) => {
-        const {fromAccountId,toAccountId,amount} = req.body;    
-        let errMsg; 
-        if(!fromAccountId) {
-            errMsg += "Source Account missing. ";
-            console.log(`Error!, ${errMsg}`);
-        }
-        if(!toAccountId) {
-            errMsg += "Destination Account missing. ";
-            console.log(`Error!, ${errMsg}`);
-        }
-        if(!amount) {
-            errMsg += "Amount missing. ";
-            console.log(`Error!, ${errMsg}`);
-        }
-        if(errMsg) {
-            throw new ErrorHandler(404,errMsg);
-        }
-        else {
-        try{           
+app.post("/transferAmount", async (req,res,next) => {
+    const {fromAccountId,toAccountId,amount} = req.body;    
+    let errMsg='';      
+    
+    try {        
+            if(!fromAccountId) {
+                errMsg += "Source Account missing. ";
+                console.log(`Error!, ${errMsg}`);
+            }
+            if(!toAccountId) {
+                errMsg += "Destination Account missing. ";
+                console.log(`Error!, ${errMsg}`);
+            }
+            if(!amount) {
+                errMsg += "Amount missing. ";
+                console.log(`Error!, ${errMsg}`);
+            }
+            if(errMsg.length>0) {
+                throw new ErrorHandler(404,errMsg);
+            } else {
                 const result = await transferAmount(fromAccountId, toAccountId, amount);
                 console.log(result)
-                res.json(result);           
-            } catch(err){
-                throw new ErrorHandler(404,err);
+                res.json(result);        
             }
-        }
+        } catch(err){
+            next(err)            
+        }   
 });
 
 //! catch 404 and forward to error handler
@@ -101,11 +101,7 @@ app.use(function(req, res, next) {
 });
 
 //! error handler by express for default usage
-app.use(function(err, req, res, next) {
-    console.log(err);
-    req.session.error = err.message;
-    handleError(err, res);
-});
+app.use(handleError);
 
 const PORT = process.env.PORT ||3000;
 app.listen(PORT, ()=> {
